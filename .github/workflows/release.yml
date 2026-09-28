@@ -1,0 +1,68 @@
+name: Build desktop release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run verify
+      - run: npm run package:mac
+      - run: |
+          mkdir -p release
+          ditto -c -k --sequesterRsrc --keepParent "dist/OSCrVIDnode.light (Alpha)-darwin-arm64/OSCrVIDnode.light (Alpha).app" "release/OSCrVIDnode-light-Alpha-macOS-Apple-Silicon.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-release
+          path: release/*.zip
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run verify
+      - run: npm run package:win
+      - shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release | Out-Null
+          Compress-Archive -Path "dist/OSCrVIDnode.light (Alpha)-win32-x64" -DestinationPath "release/OSCrVIDnode-light-Alpha-Windows-x64.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: release/*.zip
+
+  publish:
+    needs: [macos, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: "*-release"
+          path: release
+          merge-multiple: true
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" release/* \
+            --title "OSCrVIDnode.light (Alpha)" \
+            --notes "Separate OSCrVIDnode.light alpha fork with OSC controls, WebGL video calibration, display-selectable clean output, and Geist bundled throughout. macOS is for Apple Silicon; Windows is for 64-bit PCs."

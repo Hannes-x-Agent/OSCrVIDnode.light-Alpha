@@ -1,0 +1,31 @@
+{
+  "name": "oscrvidnode-light-alpha",
+  "version": "0.1.0",
+  "private": true,
+  "productName": "OSCrVIDnode.light (Alpha)",
+  "description": "A modular OSC control surface with an integrated WebGL video calibration workspace.",
+  "main": "main.mjs",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "app": "electron main.mjs",
+    "check": "node --check server.mjs && node --check main.mjs && node --check preload.cjs && node --check public/app.js && node --check verify.mjs && node --check verify-ui.mjs && node --check verify-video.mjs && node --check build-mac.mjs && node --check build-windows.mjs",
+    "verify": "node verify.mjs",
+    "verify:ui": "node verify-ui.mjs",
+    "verify:video": "node verify-video.mjs",
+    "verify:packaged": "node verify-packaged.mjs",
+    "package:mac": "node build-mac.mjs",
+    "package:win": "node build-windows.mjs"
+  },
+  "dependencies": {
+    "osc": "2.4.5",
+    "ws": "8.22.0"
+  },
+  "overrides": {
+    "ws": "8.22.0"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^44.4.5"
+  }
+}

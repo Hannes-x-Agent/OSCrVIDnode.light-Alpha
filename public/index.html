@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>OSCrVIDnode.light (Alpha)</title>
+    <link rel="preload" href="/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/vendor/osc-browser.min.js" defer></script>
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div id="uiRoot">
+      <header class="topbar shell">
+        <div class="brand">
+          <img class="brand-logo" src="/assets/OSCrVIDnodeLightLogo-02.svg" alt="OSCrVIDnode.light (Alpha) — Modular OSC and video interface by otherno.devs // echo\void;" />
+        </div>
+        <div class="top-actions">
+          <span class="save-status" id="saveStatus">Saved</span>
+          <button class="tool-button" id="titleLockButton" type="button" aria-pressed="false" title="Unlock deletion">
+            <span id="lockIcon" aria-hidden="true">🔒</span><span id="lockLabel">Deletion locked</span>
+          </button>
+          <div class="zoom-control" aria-label="Interface zoom">
+            <button id="zoomOutButton" type="button" aria-label="Zoom out">−</button>
+            <output id="zoomValue">100%</output>
+            <button id="zoomInButton" type="button" aria-label="Zoom in">+</button>
+          </div>
+          <button class="tool-button" id="logToggleButton" type="button" aria-pressed="true">Hide log</button>
+          <button class="connection" id="connectionButton" type="button">
+            <span class="status-dot" aria-hidden="true"></span><span id="connectionLabel">Connect</span>
+          </button>
+        </div>
+      </header>
+
+      <nav class="tab-bar shell" aria-label="App sections">
+        <button class="tab-button active" type="button" data-tab="sliders" aria-selected="true">Controls</button>
+        <button class="tab-button" type="button" data-tab="video" aria-selected="false">Video</button>
+      </nav>
+
+      <section class="tab-panel active" id="slidersPanel" data-panel="sliders">
+      <div class="workspace shell" id="workspace">
+        <main class="main-column">
+          <section class="destination panel" aria-labelledby="destinationTitle">
+            <div class="section-heading">
+              <div><p class="section-kicker">UDP output</p><h2 id="destinationTitle">Destination</h2></div>
+              <p class="helper">Set the host and port of your OSC receiver.</p>
+            </div>
+            <form id="targetForm" class="target-form">
+              <label><span>Host / IP</span><input id="targetHost" name="host" value="127.0.0.1" autocomplete="off" required /></label>
+              <label><span>Port</span><input id="targetPort" name="port" value="8000" type="number" min="1" max="65535" required /></label>
+              <button class="primary-button" type="submit">Apply target</button>
+            </form>
+          </section>
+
+          <section aria-labelledby="modulesTitle">
+            <div class="section-heading outside">
+              <div><p class="section-kicker">Saved modules</p><h2 id="modulesTitle">Controls</h2></div>
+              <p class="helper">Values, names, addresses, and presets persist between launches.</p>
+            </div>
+            <form id="addModuleForm" class="add-module panel">
+              <label><span>Module type</span>
+                <select id="newModuleType">
+                  <option value="slider">Slider</option>
+                  <option value="trigger">Trigger button</option>
+                  <option value="toggle">Toggle button</option>
+                  <option value="xy1">Single-point XY</option>
+                  <option value="xy2">Two-point XY</option>
+                </select>
+              </label>
+              <label><span>Unique title</span><input id="newModuleTitle" value="New control" required /></label>
+              <button class="primary-button add-button" type="submit"><span aria-hidden="true">＋</span> Add module</button>
+            </form>
+            <div id="modulesContainer" class="modules-grid" aria-live="polite"></div>
+          </section>
+
+          <section class="custom-section" aria-labelledby="customTitle">
+            <div class="section-heading outside">
+              <div><p class="section-kicker">One-off messages</p><h2 id="customTitle">Custom sends</h2></div>
+              <button class="outline-button" id="addCustomButton" type="button"><span aria-hidden="true">＋</span> Add custom send</button>
+            </div>
+            <div id="customContainer" class="custom-list"></div>
+          </section>
+        </main>
+
+        <aside class="side-column" id="sideColumn">
+          <section class="device-panel panel" aria-labelledby="devicesTitle">
+            <div class="log-heading">
+              <div><p class="section-kicker">Outputs</p><h2 id="devicesTitle">Devices</h2></div>
+              <span class="device-count" id="deviceCount">0</span>
+            </div>
+            <div class="destination-device" id="destinationDevice">
+              <span class="device-status-dot" aria-hidden="true"></span>
+              <div><strong>UDP destination</strong><code id="destinationEndpoint">127.0.0.1:8000</code></div>
+              <span class="device-state">Ready</span>
+            </div>
+            <ol id="deviceList" aria-live="polite"></ol>
+          </section>
+          <section class="activity-panel panel" id="activityPanel" aria-labelledby="logTitle">
+            <div class="log-heading">
+              <div><p class="section-kicker live-indicator">Live</p><h2 id="logTitle">Activity</h2></div>
+              <button id="clearLogButton" class="text-button" type="button">Clear</button>
+            </div>
+            <ol id="activityLog" aria-live="polite"></ol>
+          </section>
+        </aside>
+      </div>
+      </section>
+
+      <section class="tab-panel" id="videoPanel" data-panel="video" hidden>
+        <div class="video-workspace shell">
+          <div class="video-controls" id="videoControls">
+            <section class="module-card panel video-control-panel" data-video-module-id="video-output">
+              <div class="video-module-header"></div>
+              <div class="video-module-content">
+                <div class="video-status-row"><span class="webgl-status" id="webglStatus">Starting WebGL…</span></div>
+                <form class="resolution-form video-settings" id="resolutionForm">
+                  <label><span>Width</span><input id="outputWidth" type="number" min="16" max="8192" value="1920" /></label>
+                  <span class="resolution-times" aria-hidden="true">×</span>
+                  <label><span>Height</span><input id="outputHeight" type="number" min="16" max="8192" value="1080" /></label>
+                  <button class="primary-button video-live-control" type="submit">Set size</button>
+                </form>
+              </div>
+            </section>
+
+            <section class="module-card panel video-control-panel" data-video-module-id="video-source">
+              <div class="video-module-header"></div>
+              <div class="video-module-content">
+                <label class="source-select video-settings"><span>Visible source</span>
+                  <select id="videoSourceSelect">
+                    <option value="checker">Checkerboard</option><option value="test">Test card</option><option value="text">Text card</option><option value="solid">Solid colour</option><option value="video">Loaded video</option><option value="image">Loaded test image</option><option value="draw">Drawing canvas</option>
+                  </select>
+                </label>
+                <div class="file-actions video-settings">
+                  <label class="file-button"><input id="videoFileInput" type="file" accept="video/*,.mov,.mp4,.m4v,.webm" />Load video</label>
+                  <label class="file-button"><input id="imageFileInput" type="file" accept="image/*" />Load test image</label>
+                </div>
+                <p class="file-status" id="mediaStatus">No media loaded. MP4, WebM, and browser-decodable MOV are supported.</p>
+                <div class="transport-row video-live-control">
+                  <button class="outline-button" id="videoPlayButton" type="button">Play</button>
+                  <button class="outline-button" id="videoStopButton" type="button">Stop</button>
+                  <label class="inline-check"><input id="videoLoop" type="checkbox" checked /> Loop</label>
+                </div>
+                <input class="timeline video-live-control" id="videoTimeline" type="range" min="0" max="1" step="0.001" value="0" aria-label="Video timeline" />
+                <video id="videoElement" playsinline preload="metadata"></video>
+              </div>
+            </section>
+
+            <section class="module-card panel video-control-panel" data-video-module-id="video-generators">
+              <div class="video-module-header"></div>
+              <div class="video-module-content video-settings">
+                <div class="generator-grid">
+                  <label><span>Checker size</span><input id="checkerSize" type="number" min="2" max="1000" value="96" /></label>
+                  <label><span>Colour A</span><input id="checkerColorA" type="color" value="#ffffff" /></label>
+                  <label><span>Colour B</span><input id="checkerColorB" type="color" value="#0a0a0a" /></label>
+                  <label><span>Solid colour</span><input id="solidColor" type="color" value="#0a0a0a" /></label>
+                </div>
+                <label class="text-generator-input"><span>Text card content</span><textarea id="generatorText" rows="3">TYPE HERE</textarea></label>
+                <div class="generator-grid">
+                  <label><span>Text size px</span><input id="generatorTextSize" type="number" min="8" max="2000" value="180" /></label>
+                  <label><span>Text colour</span><input id="generatorTextColor" type="color" value="#0a0a0a" /></label>
+                  <label><span>Text background</span><input id="generatorTextBackground" type="color" value="#ffffff" /></label>
+                </div>
+                <div class="text-overlay-settings">
+                  <label class="inline-check"><input id="generatorTextOverlay" type="checkbox" /> Overlay text on source</label>
+                  <label class="inline-check"><input id="generatorTextBox" type="checkbox" /> Background box</label>
+                  <label><span>Text X</span><input id="generatorTextX" type="number" min="0" max="1" step="0.001" value="0.5" /></label>
+                  <label><span>Text Y</span><input id="generatorTextY" type="number" min="0" max="1" step="0.001" value="0.5" /></label>
+                </div>
+              </div>
+            </section>
+
+            <section class="module-card panel video-control-panel" data-video-module-id="video-transform">
+              <div class="video-module-header"></div>
+              <div class="video-module-content video-settings">
+                <p class="control-note">Repeat the selected source, then stretch or squash each tile independently on X and Y.</p>
+                <div class="generator-grid">
+                  <label><span>Tiles X</span><input id="videoTileX" type="number" min="1" max="32" step="1" value="1" /></label>
+                  <label><span>Tiles Y</span><input id="videoTileY" type="number" min="1" max="32" step="1" value="1" /></label>
+                  <label><span>Aspect stretch X</span><input id="videoStretchX" type="number" min="0.1" max="10" step="0.05" value="1" /></label>
+                  <label><span>Aspect stretch Y</span><input id="videoStretchY" type="number" min="0.1" max="10" step="0.05" value="1" /></label>
+                </div>
+              </div>
+            </section>
+
+            <section class="module-card panel video-control-panel" data-video-module-id="video-draw">
+              <div class="video-module-header"></div>
+              <div class="video-module-content">
+                <canvas class="drawing-canvas video-live-control" id="drawingCanvas" width="640" height="360" aria-label="Drawing canvas"></canvas>
+                <div class="draw-settings video-settings">
+                  <label><span>Brush</span><input id="brushSize" type="range" min="1" max="60" value="8" /></label>
+                  <label><span>Colour</span><input id="brushColor" type="color" value="#0a0a0a" /></label>
+                </div>
+                <button class="text-button video-live-control clear-drawing" id="clearDrawingButton" type="button">Clear drawing</button>
+              </div>
+            </section>
+
+            <section class="module-card panel video-control-panel" data-video-module-id="video-markers">
+              <div class="video-module-header"></div>
+              <div class="video-module-content">
+                <button class="outline-button compact-button video-settings" id="addVideoMarkerButton" type="button">＋ Marker</button>
+                <div class="marker-list video-settings" id="videoMarkerList" aria-label="Output markers"></div>
+                <div class="video-xy-pad video-live-control" id="videoXYPad" tabindex="0" aria-label="Video marker XY position"><span class="video-cross-lines" aria-hidden="true"></span><span class="pad-handle handle-a" id="videoXYHandle"><i>●</i></span></div>
+                <label class="marker-name-field video-settings"><span>Selected marker name</span><input id="videoMarkerName" value="Marker 1" /></label>
+                <div class="video-coordinate-row video-live-control">
+                  <label><span>X</span><input id="videoCrossX" type="number" min="0" max="1" step="0.001" value="0.5" /></label>
+                  <label><span>Y</span><input id="videoCrossY" type="number" min="0" max="1" step="0.001" value="0.5" /></label>
+                </div>
+                <div class="overlay-settings video-settings">
+                  <label><span>Cross size px</span><input id="videoCrossSize" type="number" min="2" max="2000" value="120" /></label>
+                  <label><span>Point size px</span><input id="videoPointSize" type="number" min="1" max="500" value="12" /></label>
+                  <label><span>Colour</span><input id="videoOverlayColor" type="color" value="#ff0000" /></label>
+                  <label class="inline-check"><input id="videoOverlayVisible" type="checkbox" checked /> Show</label>
+                </div>
+                <button class="text-button remove-marker-button video-settings" id="removeVideoMarkerButton" type="button">Remove selected marker</button>
+              </div>
+            </section>
+
+            <section class="module-card panel video-control-panel" data-video-module-id="video-presentation">
+              <div class="video-module-header"></div>
+              <div class="video-module-content">
+                <p class="control-note">Choose a display. The checked output opens borderless and fullscreen on that screen.</p>
+                <label class="output-screen-select video-settings"><span>Output display</span><select id="outputDisplaySelect"><option value="">Checking displays…</option></select></label>
+                <label class="output-window-toggle inline-check video-live-control"><input id="outputWindowToggle" type="checkbox" disabled /> Open clean output window</label>
+                <p class="file-status" id="outputWindowStatus">Available in the packaged desktop app.</p>
+              </div>
+            </section>
+          </div>
+
+          <div class="video-stage-wrap">
+            <section class="video-stage panel">
+              <div class="stage-heading"><div><p class="section-kicker">WebGL canvas</p><h2>Preview</h2></div><div class="stage-actions"><span id="resolutionBadge">1920 × 1080</span><button class="outline-button" id="captureOutputButton" type="button">Capture PNG</button><button class="outline-button" id="fullscreenOutputButton" type="button">Fullscreen preview</button></div></div>
+              <div class="canvas-frame"><canvas id="videoCanvas" width="1920" height="1080"></canvas></div>
+              <p class="stage-note">The preview, fullscreen view, capture, and clean display window share this complete composited output.</p>
+            </section>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

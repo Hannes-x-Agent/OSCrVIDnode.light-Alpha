@@ -1,0 +1,8 @@
+node_modules/
+dist/
+release/
+.verification/
+preview*.png
+.DS_Store
+npm-debug.log*
+.oscrvidnode-light-state.json*
